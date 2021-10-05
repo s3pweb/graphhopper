@@ -81,6 +81,8 @@ public class DefaultTagParserFactory implements TagParserFactory {
             return new OSMFootwayParser(lookup.getEnumEncodedValue(Footway.KEY, Footway.class));
         else if (name.equals(Country.KEY))
             return new CountryParser(lookup.getEnumEncodedValue(Country.KEY, Country.class));
+        else if (name.equals(Trucked.KEY))
+            return new TruckedParser();
         return null;
     }
 }
