@@ -21,9 +21,12 @@ import com.graphhopper.json.Statement;
 
 import java.util.*;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 /**
  * This class is used in combination with CustomProfile.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class CustomModel {
 
     public static final String KEY = "custom_model";
