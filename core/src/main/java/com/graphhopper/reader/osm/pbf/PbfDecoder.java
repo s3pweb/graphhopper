@@ -91,6 +91,12 @@ public class PbfDecoder {
             lock.unlock();
             try {
                 for (ReaderElement entity : blobResult.getEntities()) {
+
+                    // 1 = way
+                    if (entity.getType() == 1) {
+                        entity.setTag("name", Long.toString(entity.getId()));
+                    }
+
                     sink.process(entity);
                 }
             } finally {
