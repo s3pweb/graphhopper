@@ -92,8 +92,7 @@ public class PbfDecoder {
             try {
                 for (ReaderElement entity : blobResult.getEntities()) {
 
-                    // 1 = way
-                    if (entity.getType() == 1) {
+                    if (entity.getType() == ReaderElement.WAY) {
                         entity.setTag("name", Long.toString(entity.getId()));
                     }
 
