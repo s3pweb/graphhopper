@@ -92,8 +92,10 @@ public class PbfDecoder {
             try {
                 for (ReaderElement entity : blobResult.getEntities()) {
 
-                    if (entity.getType() == ReaderElement.WAY) {
-                        entity.setTag("name", Long.toString(entity.getId()));
+                    if (System.getenv("OVERRIDE_STREET_NAME_WITH_ID") == "true") {
+                        if (entity.getType() == ReaderElement.WAY) {
+                            entity.setTag("name", Long.toString(entity.getId()));
+                        }
                     }
 
                     sink.process(entity);

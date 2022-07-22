@@ -15,4 +15,6 @@ EXPOSE 8989
 
 WORKDIR /app
 
+ENV OVERRIDE_STREET_NAME_WITH_ID="false"
+
 ENTRYPOINT ["java","-Xmx16g","-Xms16g","-Ddw.graphhopper.datareader.file=/data.osm.pbf","-jar","/usr/local/lib/graphhopper.jar"]
