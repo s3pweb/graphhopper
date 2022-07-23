@@ -19,23 +19,26 @@ package com.graphhopper.util.details;
 
 import com.graphhopper.util.EdgeIteratorState;
 
+import static com.graphhopper.util.Parameters.Details.OSM_ID;;
+
 /**
- * Return a String value from the key-values
+ * Return the Open Street Map ID of the Way.
  *
- * @author Robin Boldt
+ * @author add-le
  */
-public class KVStringDetails extends AbstractPathDetailsBuilder {
+public class OsmIdDetails extends AbstractPathDetailsBuilder {
 
-    private String curString;
+    private String curString = null;
+    private String key;
 
-    public KVStringDetails(String name) {
-        super(name);
+    public OsmIdDetails() {
+        super(OSM_ID);
+        this.key = "name";
     }
 
     @Override
     public boolean isEdgeDifferentToLastEdge(EdgeIteratorState edge) {
         if (curString == null) {
-            curString = (String) edge.getValue(getName());
             // TODO it would be a bit more efficient if we fetch the Map only once per edge
             // when more than one KVStringDetails are requested
             curString = (String) edge.getValue(key);
@@ -43,7 +46,7 @@ public class KVStringDetails extends AbstractPathDetailsBuilder {
                 return false;
             return true;
         }
-        String val = (String) edge.getValue(getName());
+        String val = (String) edge.getValue(key);
         if (!curString.equals(val)) {
             curString = val;
             if (curString.equals("null"))
@@ -55,6 +58,6 @@ public class KVStringDetails extends AbstractPathDetailsBuilder {
 
     @Override
     public Object getCurrentValue() {
-        return this.curString.split("\\|")[0];
+        return this.curString.split("\\|")[1];
     }
 }

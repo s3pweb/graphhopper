@@ -53,17 +53,20 @@ public class Instruction {
     protected Map<String, Object> extraInfo = new HashMap<>(3);
 
     /**
-     * The points, distances and times have exactly the same count. The last point of this
+     * The points, distances and times have exactly the same count. The last point
+     * of this
      * instruction is not duplicated here and should be in the next one.
      */
     public Instruction(int sign, String name, PointList pl) {
         this.sign = sign;
-        if (name != null) this.name = name;
+        if (name != null)
+            this.name = name;
         this.points = pl;
     }
 
     /**
-     * This method does not perform translation or combination with the sign - it just uses the
+     * This method does not perform translation or combination with the sign - it
+     * just uses the
      * provided name as instruction.
      */
     public void setUseRawName() {
@@ -86,7 +89,8 @@ public class Instruction {
     }
 
     public void setName(String name) {
-        if (name != null) this.name = name;
+        if (name != null)
+            this.name = name;
     }
 
     String _getName() {
@@ -126,7 +130,9 @@ public class Instruction {
         return this;
     }
 
-    /* This method returns the points associated to this instruction. Please note that it will not include the last point,
+    /*
+     * This method returns the points associated to this instruction. Please note
+     * that it will not include the last point,
      * i.e. the first point of the next instruction object.
      */
     public PointList getPoints() {
@@ -150,11 +156,15 @@ public class Instruction {
     }
 
     /**
-     * This method returns the length of an Instruction. The length of an instruction is defined by [the
-     * index of the first point of the next instruction] - [the index of the first point of this instruction].
+     * This method returns the length of an Instruction. The length of an
+     * instruction is defined by [the
+     * index of the first point of the next instruction] - [the index of the first
+     * point of this instruction].
      * <p>
-     * In general this will just resolve to the size of the PointList, except for {@link ViaInstruction} and
-     * {@link FinishInstruction}, which are only virtual instructions, in a sense that they don't provide
+     * In general this will just resolve to the size of the PointList, except for
+     * {@link ViaInstruction} and
+     * {@link FinishInstruction}, which are only virtual instructions, in a sense
+     * that they don't provide
      * a turn instruction, but only an info ("reached via point or destination").
      * <p>
      * See #1216 and #1138
@@ -168,7 +178,9 @@ public class Instruction {
             return getName();
 
         String str;
-        String streetName = _getName();
+        String streetName = _getName().split("\\|")[0];
+        if (streetName.equals("null"))
+            streetName = "";
         int indi = getSign();
         if (indi == Instruction.CONTINUE_ON_STREET) {
             str = Helper.isEmpty(streetName) ? tr.tr("continue") : tr.tr("continue_onto", streetName);

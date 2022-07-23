@@ -35,7 +35,8 @@ import static com.graphhopper.util.Parameters.Details.STREET_NAME;
 
 public class InstructionListSerializer extends JsonSerializer<InstructionList> {
     @Override
-    public void serialize(InstructionList instructions, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
+    public void serialize(InstructionList instructions, JsonGenerator jsonGenerator,
+            SerializerProvider serializerProvider) throws IOException {
         List<Map<String, Object>> instrList = new ArrayList<>(instructions.size());
         int pointsIndex = 0;
         for (Instruction instruction : instructions) {
@@ -44,7 +45,8 @@ public class InstructionListSerializer extends JsonSerializer<InstructionList> {
 
             instrJson.put("text", Helper.firstBig(instruction.getTurnDescription(instructions.getTr())));
 
-            instrJson.put(STREET_NAME, instruction.getName());
+            instrJson.put(STREET_NAME, (instruction.getName().split("\\|")[0].equals("null")) ? ""
+                    : instruction.getName().split("\\|")[0]);
             instrJson.put("time", instruction.getTime());
             instrJson.put("distance", Helper.round(instruction.getDistance(), 3));
             instrJson.put("sign", instruction.getSign());

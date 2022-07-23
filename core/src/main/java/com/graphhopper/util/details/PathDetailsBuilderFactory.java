@@ -24,6 +24,9 @@ import com.graphhopper.storage.Graph;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import static com.graphhopper.util.Parameters.Details.*;
 
 /**
@@ -63,9 +66,12 @@ public class PathDetailsBuilderFactory {
 
         if (requestedPathDetails.contains(INTERSECTION))
             builders.add(new IntersectionDetails(graph, weighting));
+        if (requestedPathDetails.contains(OSM_ID))
+            builders.add(new OsmIdDetails());
 
         for (String pathDetail : requestedPathDetails) {
-            if (!evl.hasEncodedValue(pathDetail)) continue; // path details like "time" won't be found
+            if (!evl.hasEncodedValue(pathDetail))
+                continue; // path details like "time" won't be found
 
             EncodedValue ev = evl.getEncodedValue(pathDetail, EncodedValue.class);
             if (ev instanceof DecimalEncodedValue)
@@ -78,11 +84,13 @@ public class PathDetailsBuilderFactory {
                 builders.add(new StringDetails(pathDetail, (StringEncodedValue) ev));
             else if (ev instanceof IntEncodedValue)
                 builders.add(new IntDetails(pathDetail, (IntEncodedValue) ev));
-            else throw new IllegalArgumentException("unknown EncodedValue class " + ev.getClass().getName());
+            else
+                throw new IllegalArgumentException("unknown EncodedValue class " + ev.getClass().getName());
         }
 
         if (requestedPathDetails.size() != builders.size()) {
-            throw new IllegalArgumentException("You requested the details " + requestedPathDetails + " but we could only find " + builders);
+            throw new IllegalArgumentException(
+                    "You requested the details " + requestedPathDetails + " but we could only find " + builders);
         }
 
         return builders;

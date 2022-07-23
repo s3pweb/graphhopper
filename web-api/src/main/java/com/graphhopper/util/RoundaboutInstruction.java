@@ -73,12 +73,13 @@ public class RoundaboutInstruction extends Instruction {
     }
 
     /**
-     * @return radian of angle -2PI &lt; x &lt; 2PI between roundabout entrance and exit values
-     * <ul>
-     * <li>&gt; 0 is for clockwise rotation</li>
-     * <li>&lt; 0 is for counterclockwise rotation</li>
-     * <li>NaN if direction of rotation is unclear</li>
-     * </ul>
+     * @return radian of angle -2PI &lt; x &lt; 2PI between roundabout entrance and
+     *         exit values
+     *         <ul>
+     *         <li>&gt; 0 is for clockwise rotation</li>
+     *         <li>&lt; 0 is for counterclockwise rotation</li>
+     *         <li>NaN if direction of rotation is unclear</li>
+     *         </ul>
      */
     public double getTurnAngle() {
         if (Math.abs(clockwise) != 1)
@@ -114,7 +115,9 @@ public class RoundaboutInstruction extends Instruction {
             return getName();
 
         String str;
-        String streetName = _getName();
+        String streetName = _getName().split("\\|")[0];
+        if (streetName.equals("null"))
+            streetName = "";
         int indi = getSign();
         if (indi == Instruction.USE_ROUNDABOUT) {
             if (!exited) {

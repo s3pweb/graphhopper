@@ -21,7 +21,10 @@ package com.graphhopper.util;
  * @author Peter Karich
  */
 public class Parameters {
-    /* Parameters with an 'INIT' prefix are used as defaults and/or are configured at start.*/
+    /*
+     * Parameters with an 'INIT' prefix are used as defaults and/or are configured
+     * at start.
+     */
     static final String ROUTING_INIT_PREFIX = "routing.";
 
     /**
@@ -113,7 +116,8 @@ public class Parameters {
         public static final String INIT_WAY_POINT_MAX_DISTANCE = ROUTING_INIT_PREFIX + "way_point_max_distance";
         public static final String ELEVATION_WAY_POINT_MAX_DISTANCE = "elevation_way_point_max_distance";
         /**
-         * true or false. If routes at via points should avoid u-turns. (not for CH) See related
+         * true or false. If routes at via points should avoid u-turns. (not for CH) See
+         * related
          * 'heading' parameter:
          * https://github.com/graphhopper/graphhopper/blob/master/docs/core/routing.md#heading
          */
@@ -128,7 +132,8 @@ public class Parameters {
         public static final double DEFAULT_HEADING_PENALTY = 300;
         public static final String HEADING_PENALTY = "heading_penalty";
         /**
-         * block road access via a point in the format lat,lon or an area defined by a circle lat,lon,radius or
+         * block road access via a point in the format lat,lon or an area defined by a
+         * circle lat,lon,radius or
          * a rectangle lat1,lon1,lat2,lon2
          */
         public static final String BLOCK_AREA = "block_area";
@@ -149,7 +154,8 @@ public class Parameters {
     public static final class CH {
         public static final String PREPARE = "prepare.ch.";
         /**
-         * This property name in HintsMap configures at runtime if CH routing should be ignored.
+         * This property name in HintsMap configures at runtime if CH routing should be
+         * ignored.
          */
         public static final String DISABLE = "ch.disable";
     }
@@ -160,7 +166,8 @@ public class Parameters {
     public static final class Landmark {
         public static final String PREPARE = "prepare.lm.";
         /**
-         * This property name in HintsMap configures at runtime if CH routing should be ignored.
+         * This property name in HintsMap configures at runtime if CH routing should be
+         * ignored.
          */
         public static final String DISABLE = "lm.disable";
         /**
@@ -185,9 +192,11 @@ public class Parameters {
         private static final String NON_CH_PREFIX = "non_ch.";
 
         /**
-         * Describes the maximum allowed distance between two consecutive waypoints of a non-CH request. Distance is in meter.
+         * Describes the maximum allowed distance between two consecutive waypoints of a
+         * non-CH request. Distance is in meter.
          */
-        public static final String MAX_NON_CH_POINT_DISTANCE = ROUTING_INIT_PREFIX + NON_CH_PREFIX + "max_waypoint_distance";
+        public static final String MAX_NON_CH_POINT_DISTANCE = ROUTING_INIT_PREFIX + NON_CH_PREFIX
+                + "max_waypoint_distance";
     }
 
     /**
@@ -210,6 +219,7 @@ public class Parameters {
         public static final String WEIGHT = "weight";
         public static final String DISTANCE = "distance";
         public static final String INTERSECTION = "intersection";
+        public static final String OSM_ID = "osm_id";
     }
 
 }

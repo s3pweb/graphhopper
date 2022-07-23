@@ -12,7 +12,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Decodes all blocks from a PBF stream using worker threads, and passes the results to the
+ * Decodes all blocks from a PBF stream using worker threads, and passes the
+ * results to the
  * downstream sink.
  * <p>
  *
@@ -31,13 +32,15 @@ public class PbfDecoder {
      * Creates a new instance.
      * <p>
      *
-     * @param streamSplitter  The PBF stream splitter providing the source of blobs to be decoded.
+     * @param streamSplitter  The PBF stream splitter providing the source of blobs
+     *                        to be decoded.
      * @param executorService The executor service managing the thread pool.
-     * @param maxPendingBlobs The maximum number of blobs to have in progress at any point in time.
+     * @param maxPendingBlobs The maximum number of blobs to have in progress at any
+     *                        point in time.
      * @param sink            The sink to send all decoded entities to.
      */
     public PbfDecoder(PbfStreamSplitter streamSplitter, ExecutorService executorService, int maxPendingBlobs,
-                      Sink sink) {
+            Sink sink) {
         this.streamSplitter = streamSplitter;
         this.executorService = executorService;
         this.maxPendingBlobs = maxPendingBlobs;
@@ -52,7 +55,8 @@ public class PbfDecoder {
     }
 
     /**
-     * Any thread can call this method when they wish to wait until an update has been performed by
+     * Any thread can call this method when they wish to wait until an update has
+     * been performed by
      * another thread.
      */
     private void waitForUpdate() {
@@ -64,7 +68,8 @@ public class PbfDecoder {
     }
 
     /**
-     * Any thread can call this method when they wish to signal another thread that an update has
+     * Any thread can call this method when they wish to signal another thread that
+     * an update has
      * occurred.
      */
     private void signalUpdate() {
@@ -92,10 +97,14 @@ public class PbfDecoder {
             try {
                 for (ReaderElement entity : blobResult.getEntities()) {
 
-                    if (System.getenv("OVERRIDE_STREET_NAME_WITH_ID") == "true") {
-                        if (entity.getType() == ReaderElement.WAY) {
-                            entity.setTag("name", Long.toString(entity.getId()));
-                        }
+                    // if (System.getenv("OVERRIDE_STREET_NAME_WITH_ID") == "true") {
+                    // if (entity.getType() == ReaderElement.WAY) {
+                    // entity.setTag("name", Long.toString(entity.getId()));
+                    // }
+                    // }
+
+                    if (entity.getType() == ReaderElement.WAY) {
+                        entity.setTag("name", (entity.getTag("name") + "|" + Long.toString(entity.getId())));
                     }
 
                     sink.process(entity);
@@ -156,7 +165,8 @@ public class PbfDecoder {
             sendResultsToSink(maxPendingBlobs - 1);
         }
 
-        // There are no more entities available in the PBF stream, so send all remaining data to the sink.
+        // There are no more entities available in the PBF stream, so send all remaining
+        // data to the sink.
         sendResultsToSink(0);
     }
 
