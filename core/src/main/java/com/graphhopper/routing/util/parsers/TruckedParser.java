@@ -20,34 +20,34 @@ package com.graphhopper.routing.util.parsers;
 import com.graphhopper.reader.ReaderWay;
 import com.graphhopper.routing.ev.EncodedValue;
 import com.graphhopper.routing.ev.EncodedValueLookup;
-import com.graphhopper.routing.ev.EnumEncodedValue;
-import com.graphhopper.routing.ev.TruckedLegacy;
+import com.graphhopper.routing.ev.IntEncodedValue;
+import com.graphhopper.routing.ev.Trucked;
 import com.graphhopper.storage.IntsRef;
 
 import java.util.List;
+import java.lang.Integer;
+import java.lang.NumberFormatException;
 
 public class TruckedParser implements TagParser {
-    private final EnumEncodedValue<TruckedLegacy> truckedEnc;
+    private final IntEncodedValue truckedEnc;
 
-    public TruckedParser() {
-        this.truckedEnc = TruckedLegacy.create();
+    public TruckedParser(IntEncodedValue truckedEnc) {
+        this.truckedEnc = truckedEnc;
     }
 
     @Override
-    public void createEncodedValues(EncodedValueLookup lookup, List<EncodedValue> registerNewEncodedValue) {
-        registerNewEncodedValue.add(truckedEnc);
-    }
+    public IntsRef handleWayTags(IntsRef edgeFlags, ReaderWay readerWay, IntsRef relationFlags) {
+        int value = 0;
 
-    @Override
-    public IntsRef handleWayTags(IntsRef edgeFlags, ReaderWay readerWay, boolean ferry, IntsRef relationFlags) {
-        // if (readerWay.hasTag("trucked", "yes"))
-        //     truckedEnc.setEnum(false, edgeFlags, TruckedLegacy.YES);
-        if (readerWay.getTag("trucked", 0.0) > 0.0) {
-            truckedEnc.setEnum(false, edgeFlags, TruckedLegacy.YES);
+        try {
+            value = Integer.parseInt(readerWay.getTag("trucked"));
+        } catch (NumberFormatException nfe) {
+            // nothing to do
+        }
+
+        if (value > 0) {
+            truckedEnc.setInt(false, edgeFlags, value);
         }
         return edgeFlags;
-        //Trucked trucked = way.getTag("trucked", Trucked.MISSING);
-        //truckedEnc.setEnum(false, edgeFlags, trucked);
-        //return edgeFlags;
     }
 }
