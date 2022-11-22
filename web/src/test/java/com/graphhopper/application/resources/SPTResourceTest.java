@@ -47,7 +47,7 @@ public class SPTResourceTest {
     private static GraphHopperServerConfiguration createConfig() {
         GraphHopperServerTestConfiguration config = new GraphHopperServerTestConfiguration();
         config.getGraphHopperConfiguration().
-                putObject("graph.flag_encoders", "car|turn_costs=true").
+                putObject("graph.vehicles", "car|turn_costs=true").
                 putObject("graph.encoded_values", "max_speed,road_class").
                 putObject("datareader.file", "../core/files/andorra.osm.pbf").
                 putObject("graph.location", DIR).
@@ -128,8 +128,8 @@ public class SPTResourceTest {
 
     @Test
     public void profileWithLegacyParametersNotAllowed() {
-        assertNotAllowed("&profile=fast_car&weighting=fastest", "Since you are using the 'profile' parameter, do not use the 'weighting' parameter. You used 'weighting=fastest'");
-        assertNotAllowed("&profile=fast_car&vehicle=car", "Since you are using the 'profile' parameter, do not use the 'vehicle' parameter. You used 'vehicle=car'");
+        assertNotAllowed("&profile=car&weighting=fastest", "The 'weighting' parameter is no longer supported. You used 'weighting=fastest'");
+        assertNotAllowed("&vehicle=car", "profile parameter required");
     }
 
     private void assertNotAllowed(String hint, String error) {

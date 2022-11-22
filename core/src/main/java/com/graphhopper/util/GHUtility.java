@@ -336,6 +336,11 @@ public class GHUtility {
      */
     public static Graph sortDFS(Graph g, Graph sortedGraph) {
         if (g.getTurnCostStorage() != null) {
+            // not only would we have to sort the turn cost storage when we re-sort the graph, but we'd also have to make
+            // sure that the location index always snaps to real edges and not the corresponding artificial edge that we
+            // introduced to deal with via-way restrictions. Without sorting this works automatically because the real
+            // edges use lower edge ids. Otherwise we'd probably have to use some kind of is_artificial flag for each
+            // edge.
             throw new IllegalArgumentException("Sorting the graph is currently not supported in the presence of turn costs");
         }
         int nodes = g.getNodes();
@@ -691,14 +696,37 @@ public class GHUtility {
     public static List<CustomArea> readCountries() {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JtsModule());
+
+        Map<String, Country> map = new HashMap<>(Country.values().length);
+        for (Country c : Country.values()) map.put(c.getAlpha2(), c);
+
         try (Reader reader = new InputStreamReader(GHUtility.class.getResourceAsStream("/com/graphhopper/countries/countries.geojson"), StandardCharsets.UTF_8)) {
             JsonFeatureCollection jsonFeatureCollection = objectMapper.readValue(reader, JsonFeatureCollection.class);
             return jsonFeatureCollection.getFeatures().stream()
-                    .map(CustomArea::fromJsonFeature)
+                    // exclude areas not in the list of Country enums like FX => Metropolitan France
+                    .filter(customArea -> map.get((String) customArea.getProperties().get("id")) != null)
+                    .map((f) -> {
+                        CustomArea ca = CustomArea.fromJsonFeature(f);
+                        Country country = map.get((String) f.getProperties().get("id"));
+                        ca.getProperties().put(Country.ISO_ALPHA3, country.name());
+                        return ca;
+                    })
                     .collect(Collectors.toList());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    public static CustomArea getFirstDuplicateArea(List<CustomArea> areas, String id) {
+        Set<String> result = new HashSet<>(areas.size());
+        for (CustomArea area : areas) {
+            String countryCode = (String) area.getProperties().get(id);
+            // in our country file there are not only countries but "subareas" (with ISO3166-2) or other unnamed areas
+            // like Metropolitan Netherlands
+            if (countryCode != null && !result.add(countryCode))
+                return area;
+        }
+        return null;
     }
 
     public static void runConcurrently(Stream<Callable<String>> callables, int threads) {

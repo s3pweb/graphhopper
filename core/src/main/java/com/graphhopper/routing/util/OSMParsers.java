@@ -18,17 +18,13 @@
 
 package com.graphhopper.routing.util;
 
-import com.graphhopper.reader.OSMTurnRelation;
 import com.graphhopper.reader.ReaderRelation;
 import com.graphhopper.reader.ReaderWay;
+import com.graphhopper.reader.osm.RestrictionTagParser;
 import com.graphhopper.routing.ev.EncodedValue;
-import com.graphhopper.routing.util.parsers.OSMTurnRelationParser;
 import com.graphhopper.routing.util.parsers.RelationTagParser;
 import com.graphhopper.routing.util.parsers.TagParser;
-import com.graphhopper.routing.util.parsers.TurnCostParser;
-import com.graphhopper.storage.Graph;
 import com.graphhopper.storage.IntsRef;
-import com.graphhopper.util.EdgeIteratorState;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,18 +34,19 @@ public class OSMParsers {
     private final List<TagParser> wayTagParsers;
     private final List<VehicleTagParser> vehicleTagParsers;
     private final List<RelationTagParser> relationTagParsers;
-    private final List<TurnCostParser> turnCostParsers;
+    private final List<RestrictionTagParser> restrictionTagParsers;
     private final EncodedValue.InitializerConfig relConfig = new EncodedValue.InitializerConfig();
 
     public OSMParsers() {
         this(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
     }
 
-    public OSMParsers(List<TagParser> wayTagParsers, List<VehicleTagParser> vehicleTagParsers, List<RelationTagParser> relationTagParsers, List<TurnCostParser> turnCostParsers) {
+    public OSMParsers(List<TagParser> wayTagParsers, List<VehicleTagParser> vehicleTagParsers,
+                      List<RelationTagParser> relationTagParsers, List<RestrictionTagParser> restrictionTagParsers) {
         this.wayTagParsers = wayTagParsers;
         this.vehicleTagParsers = vehicleTagParsers;
         this.relationTagParsers = relationTagParsers;
-        this.turnCostParsers = turnCostParsers;
+        this.restrictionTagParsers = restrictionTagParsers;
     }
 
     public OSMParsers addWayTagParser(TagParser tagParser) {
@@ -59,8 +56,9 @@ public class OSMParsers {
 
     public OSMParsers addVehicleTagParser(VehicleTagParser vehicleTagParser) {
         vehicleTagParsers.add(vehicleTagParser);
-        if (vehicleTagParser.supportsTurnCosts())
-            turnCostParsers.add(new OSMTurnRelationParser(vehicleTagParser.getAccessEnc(), vehicleTagParser.getTurnCostEnc(), vehicleTagParser.getRestrictions()));
+        if (vehicleTagParser.supportsTurnCosts()) {
+            restrictionTagParsers.add(new RestrictionTagParser(vehicleTagParser.getRestrictions(), vehicleTagParser.getTurnCostEnc()));
+        }
         return this;
     }
 
@@ -69,8 +67,8 @@ public class OSMParsers {
         return this;
     }
 
-    public OSMParsers addTurnCostTagParser(TurnCostParser turnCostParser) {
-        turnCostParsers.add(turnCostParser);
+    public OSMParsers addRestrictionTagParser(RestrictionTagParser restrictionTagParser) {
+        restrictionTagParsers.add(restrictionTagParser);
         return this;
     }
 
@@ -95,14 +93,6 @@ public class OSMParsers {
         return edgeFlags;
     }
 
-    public void applyWayTags(ReaderWay way, EdgeIteratorState edge) {
-        vehicleTagParsers.forEach(t -> t.applyWayTags(way, edge));
-    }
-
-    public void handleTurnRelationTags(OSMTurnRelation turnRelation, TurnCostParser.ExternalInternalMap map, Graph graph) {
-        turnCostParsers.forEach(t -> t.handleTurnRelationTags(turnRelation, map, graph));
-    }
-
     public IntsRef createRelationFlags() {
         int requiredInts = relConfig.getRequiredInts();
         if (requiredInts > 2)
@@ -112,5 +102,9 @@ public class OSMParsers {
 
     public List<VehicleTagParser> getVehicleTagParsers() {
         return vehicleTagParsers;
+    }
+
+    public List<RestrictionTagParser> getRestrictionTagParsers() {
+        return restrictionTagParsers;
     }
 }

@@ -21,7 +21,6 @@ import com.carrotsearch.hppc.IntHashSet;
 import com.graphhopper.GraphHopper;
 import com.graphhopper.config.Profile;
 import com.graphhopper.routing.AStarBidirection;
-import com.graphhopper.routing.BidirRoutingAlgorithm;
 import com.graphhopper.routing.DijkstraBidirectionRef;
 import com.graphhopper.routing.Path;
 import com.graphhopper.routing.ev.BooleanEncodedValue;
@@ -74,7 +73,14 @@ public class MapMatching {
     private final DistanceCalc distanceCalc = new DistancePlaneProjection();
     private QueryGraph queryGraph;
 
+    private Map<String, Object> statistics = new HashMap<>();
+
     public static MapMatching fromGraphHopper(GraphHopper graphHopper, PMap hints) {
+        Router router = routerFromGraphHopper(graphHopper, hints);
+        return new MapMatching(graphHopper.getBaseGraph(), (LocationIndexTree) graphHopper.getLocationIndex(), router);
+    }
+
+    public static Router routerFromGraphHopper(GraphHopper graphHopper, PMap hints) {
         if (hints.has("vehicle"))
             throw new IllegalArgumentException("MapMatching hints may no longer contain a vehicle, use the profile parameter instead, see core/#1958");
         if (hints.has("weighting"))
@@ -105,14 +111,9 @@ public class MapMatching {
         boolean useDijkstra = disableLM || disableCH;
 
         LandmarkStorage landmarks;
-        if (graphHopper.getLMPreparationHandler().isEnabled() && !useDijkstra) {
+        if (!useDijkstra && graphHopper.getLandmarks().get(profile.getName()) != null) {
             // using LM because u-turn prevention does not work properly with (node-based) CH
             landmarks = graphHopper.getLandmarks().get(profile.getName());
-            if (landmarks == null) {
-                throw new IllegalArgumentException("Cannot find LM preparation for the requested profile: '" + profile.getName() + "'" +
-                        "\nYou can try disabling LM using " + Parameters.Landmark.DISABLE + "=true" +
-                        "\navailable LM profiles: " + graphHopper.getLandmarks().keySet());
-            }
         } else {
             landmarks = null;
         }
@@ -128,8 +129,38 @@ public class MapMatching {
             }
 
             @Override
-            public BidirRoutingAlgorithm createAlgo(QueryGraph queryGraph) {
-                return createRouter(queryGraph, queryGraph.wrapWeighting(weighting), landmarks, maxVisitedNodes);
+            public List<Path> calcPaths(QueryGraph queryGraph, int fromNode, int fromOutEdge, int[] toNodes, int[] toInEdges) {
+                assert(toNodes.length == toInEdges.length);
+                List<Path> result = new ArrayList<>();
+                for (int i = 0; i < toNodes.length; i++) {
+                    result.add(calcOnePath(queryGraph, fromNode, toNodes[i], fromOutEdge, toInEdges[i]));
+                }
+                return result;
+            }
+
+            private Path calcOnePath(QueryGraph queryGraph, int fromNode, int toNode, int fromOutEdge, int toInEdge) {
+                if (landmarks != null) {
+                    AStarBidirection aStarBidirection = new AStarBidirection(queryGraph, queryGraph.wrapWeighting(weighting), TraversalMode.EDGE_BASED) {
+                        @Override
+                        protected void initCollections(int size) {
+                            super.initCollections(50);
+                        }
+                    };
+                    int activeLM = Math.min(8, landmarks.getLandmarkCount());
+                    LMApproximator lmApproximator = LMApproximator.forLandmarks(queryGraph, landmarks, activeLM);
+                    aStarBidirection.setApproximation(lmApproximator);
+                    aStarBidirection.setMaxVisitedNodes(maxVisitedNodes);
+                    return aStarBidirection.calcPath(fromNode, toNode, fromOutEdge, toInEdge);
+                } else {
+                    DijkstraBidirectionRef dijkstraBidirectionRef = new DijkstraBidirectionRef(queryGraph, queryGraph.wrapWeighting(weighting), TraversalMode.EDGE_BASED) {
+                        @Override
+                        protected void initCollections(int size) {
+                            super.initCollections(50);
+                        }
+                    };
+                    dijkstraBidirectionRef.setMaxVisitedNodes(maxVisitedNodes);
+                    return dijkstraBidirectionRef.calcPath(fromNode, toNode, fromOutEdge, toInEdge);
+                }
             }
 
             @Override
@@ -137,8 +168,7 @@ public class MapMatching {
                 return weighting;
             }
         };
-
-        return new MapMatching(graphHopper.getBaseGraph(), (LocationIndexTree) graphHopper.getLocationIndex(), router);
+        return router;
     }
 
     public MapMatching(BaseGraph graph, LocationIndexTree locationIndex, Router router) {
@@ -165,11 +195,13 @@ public class MapMatching {
 
     public MatchResult match(List<Observation> observations) {
         List<Observation> filteredObservations = filterObservations(observations);
+        statistics.put("filteredObservations", filteredObservations.size());
 
         // Snap observations to links. Generates multiple candidate snaps per observation.
         List<Collection<Snap>> snapsPerObservation = filteredObservations.stream()
                 .map(o -> findCandidateSnaps(o.getPoint().lat, o.getPoint().lon))
                 .collect(Collectors.toList());
+        statistics.put("snapsPerObservation", snapsPerObservation.stream().mapToInt(Collection::size).toArray());
 
         // Create the query graph, containing split edges so that all the places where an observation might have happened
         // are a node. This modifies the Snap objects and puts the new node numbers into them.
@@ -181,6 +213,7 @@ public class MapMatching {
 
         // Compute the most likely sequence of map matching candidates:
         List<SequenceState<State, Observation, Path>> seq = computeViterbiSequence(timeSteps);
+        statistics.put("transitionDistances", seq.stream().filter(s -> s.transitionDescriptor != null).mapToLong(s -> Math.round(s.transitionDescriptor.getDistance())).toArray());
 
         List<EdgeIteratorState> path = seq.stream().filter(s1 -> s1.transitionDescriptor != null).flatMap(s1 -> s1.transitionDescriptor.calcEdges().stream()).collect(Collectors.toList());
 
@@ -367,8 +400,14 @@ public class MapMatching {
             final double linearDistance = distanceCalc.calcDist(timeStep.observation.getPoint().lat, timeStep.observation.getPoint().lon,
                     nextTimeStep.observation.getPoint().lat, nextTimeStep.observation.getPoint().lon)
                     + nextTimeStep.observation.getAccumulatedLinearDistanceToPrevious();
-            for (State to : nextTimeStep.candidates) {
-                final Path path = router.createAlgo(queryGraph).calcPath(from.getSnap().getClosestNode(), to.getSnap().getClosestNode(), from.isOnDirectedEdge() ? from.getOutgoingVirtualEdge().getEdge() : EdgeIterator.ANY_EDGE, to.isOnDirectedEdge() ? to.getIncomingVirtualEdge().getEdge() : EdgeIterator.ANY_EDGE);
+            int fromNode = from.getSnap().getClosestNode();
+            int fromOutEdge = from.isOnDirectedEdge() ? from.getOutgoingVirtualEdge().getEdge() : EdgeIterator.ANY_EDGE;
+            int[] toNodes = nextTimeStep.candidates.stream().mapToInt(c -> c.getSnap().getClosestNode()).toArray();
+            int[] toInEdges = nextTimeStep.candidates.stream().mapToInt(to -> to.isOnDirectedEdge() ? to.getIncomingVirtualEdge().getEdge() : EdgeIterator.ANY_EDGE).toArray();
+            List<Path> paths = router.calcPaths(queryGraph, fromNode, fromOutEdge, toNodes, toInEdges);
+            for (int i = 0; i < nextTimeStep.candidates.size(); i++) {
+                State to = nextTimeStep.candidates.get(i);
+                Path path = paths.get(i);
                 if (path.isFound()) {
                     double transitionLogProbability = probabilities.transitionLogProbability(path.getDistance(), linearDistance);
                     Transition<State> transition = new Transition<>(from, to);
@@ -388,6 +427,13 @@ public class MapMatching {
                 }
             }
         }
+        if (qe == null) {
+            throw new IllegalArgumentException("Sequence is broken for submitted track at initial time step.");
+        }
+        if (qe.timeStep != timeSteps.size() - 1) {
+            throw new IllegalArgumentException("Sequence is broken for submitted track at time step "
+                    + qe.timeStep + ". observation:" + qe.state.getEntry());
+        }
         ArrayList<SequenceState<State, Observation, Path>> result = new ArrayList<>();
         while (qe != null) {
             final SequenceState<State, Observation, Path> ss = new SequenceState<>(qe.state, qe.state.getEntry(), qe.back == null ? null : roadPaths.get(new Transition<>(qe.back.state, qe.state)));
@@ -398,30 +444,16 @@ public class MapMatching {
         return result;
     }
 
-    private static BidirRoutingAlgorithm createRouter(QueryGraph queryGraph, Weighting weighting, LandmarkStorage landmarks, int maxVisitedNodes) {
-        BidirRoutingAlgorithm router;
-        if (landmarks != null) {
-            AStarBidirection algo = new AStarBidirection(queryGraph, weighting, TraversalMode.EDGE_BASED) {
-                @Override
-                protected void initCollections(int size) {
-                    super.initCollections(50);
-                }
-            };
-            int activeLM = Math.min(8, landmarks.getLandmarkCount());
-            LMApproximator lmApproximator = LMApproximator.forLandmarks(queryGraph, landmarks, activeLM);
-            algo.setApproximation(lmApproximator);
-            algo.setMaxVisitedNodes(maxVisitedNodes);
-            router = algo;
-        } else {
-            router = new DijkstraBidirectionRef(queryGraph, weighting, TraversalMode.EDGE_BASED) {
-                @Override
-                protected void initCollections(int size) {
-                    super.initCollections(50);
-                }
-            };
-            router.setMaxVisitedNodes(maxVisitedNodes);
+    private void fail(int timeStepCounter, ObservationWithCandidateStates prevTimeStep, ObservationWithCandidateStates timeStep) {
+        String likelyReasonStr = "";
+        if (prevTimeStep != null) {
+            double dist = distanceCalc.calcDist(prevTimeStep.observation.getPoint().lat, prevTimeStep.observation.getPoint().lon, timeStep.observation.getPoint().lat, timeStep.observation.getPoint().lon);
+            if (dist > 2000) {
+                likelyReasonStr = "Too long distance to previous measurement? "
+                        + Math.round(dist) + "m, ";
+            }
         }
-        return router;
+
     }
 
     private List<EdgeMatch> prepareEdgeMatches(List<SequenceState<State, Observation, Path>> seq) {
@@ -510,6 +542,10 @@ public class MapMatching {
         }
     }
 
+    public Map<String, Object> getStatistics() {
+        return statistics;
+    }
+
     private static class MapMatchedPath extends Path {
         MapMatchedPath(Graph graph, Weighting weighting, List<EdgeIteratorState> edges) {
             super(graph);
@@ -532,7 +568,7 @@ public class MapMatching {
     public interface Router {
         EdgeFilter getSnapFilter();
 
-        BidirRoutingAlgorithm createAlgo(QueryGraph graph);
+        List<Path> calcPaths(QueryGraph queryGraph, int fromNode, int fromOutEdge, int[] toNodes, int[] toInEdges);
 
         Weighting getWeighting();
     }
