@@ -29,11 +29,9 @@ import static com.graphhopper.util.Parameters.Details.OSM_ID;;
 public class OsmIdDetails extends AbstractPathDetailsBuilder {
 
     private String curString = null;
-    private String key;
 
     public OsmIdDetails() {
         super(OSM_ID);
-        this.key = "name";
     }
 
     @Override
@@ -41,12 +39,13 @@ public class OsmIdDetails extends AbstractPathDetailsBuilder {
         if (curString == null) {
             // TODO it would be a bit more efficient if we fetch the Map only once per edge
             // when more than one KVStringDetails are requested
-            curString = (String) edge.getValue(key);
+
+            curString = (String) edge.getName();
             if (curString.equals("null"))
                 return false;
             return true;
         }
-        String val = (String) edge.getValue(key);
+        String val = (String) edge.getName();
         if (!curString.equals(val)) {
             curString = val;
             if (curString.equals("null"))
