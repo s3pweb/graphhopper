@@ -15,24 +15,28 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package com.graphhopper.routing.util;
 
-import com.graphhopper.util.PMap;
+package com.graphhopper.routing.util.parsers;
+
+import com.graphhopper.reader.ReaderWay;
+import com.graphhopper.routing.ev.EnumEncodedValue;
+import com.graphhopper.routing.ev.Footway;
+import com.graphhopper.storage.IntsRef;
 
 /**
- * @author Peter Karich
+ * see: https://wiki.openstreetmap.org/wiki/Key%3Afootway
  */
-public interface VehicleEncodedValuesFactory {
-    String ROADS = "roads";
-    String CAR = "car";
-    String BIKE = "bike";
-    String RACINGBIKE = "racingbike";
-    String MOUNTAINBIKE = "mtb";
-    String FOOT = "foot";
-    String HIKE = "hike";
-    String MOTORCYCLE = "motorcycle";
-    String WHEELCHAIR = "wheelchair";
+public class OSMFootwayParser implements TagParser {
+    private final EnumEncodedValue<Footway> footwayEnc;
 
-    VehicleEncodedValues createVehicleEncodedValues(String name, PMap configuration);
+    public OSMFootwayParser(EnumEncodedValue<Footway> footwayEnc) {
+        this.footwayEnc = footwayEnc;
+    }
 
+    @Override
+    public IntsRef handleWayTags(IntsRef edgeFlags, ReaderWay way, IntsRef relationFlags) {
+        String footway = way.getTag("footway");
+        footwayEnc.setEnum(false, edgeFlags, Footway.find(footway));
+        return edgeFlags;
+    }
 }

@@ -15,24 +15,34 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package com.graphhopper.routing.util;
 
-import com.graphhopper.util.PMap;
+package com.graphhopper.routing.ev;
 
-/**
- * @author Peter Karich
- */
-public interface VehicleEncodedValuesFactory {
-    String ROADS = "roads";
-    String CAR = "car";
-    String BIKE = "bike";
-    String RACINGBIKE = "racingbike";
-    String MOUNTAINBIKE = "mtb";
-    String FOOT = "foot";
-    String HIKE = "hike";
-    String MOTORCYCLE = "motorcycle";
-    String WHEELCHAIR = "wheelchair";
+public enum Footway {
+    MISSING("missing"), SIDEWALK("sidewalk"), CROSSING("crossing"), ACCESS_AISLE("access_aisle"),
+    LINK("link"), TRAFFIC_ISLAND("traffic_island"), ALLEY("alley");
 
-    VehicleEncodedValues createVehicleEncodedValues(String name, PMap configuration);
+    public static final String KEY = "footway";
 
+    private final String name;
+
+    Footway(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public String toString() {
+        return name;
+    }
+
+    public static Footway find(String name) {
+        if (name == null || name.isEmpty())
+            return MISSING;
+
+        for (Footway footway : values())
+            if (footway.name().equalsIgnoreCase(name))
+                return footway;
+
+        return MISSING;
+    }
 }
