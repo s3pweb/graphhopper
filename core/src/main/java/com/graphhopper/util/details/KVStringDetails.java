@@ -36,9 +36,6 @@ public class KVStringDetails extends AbstractPathDetailsBuilder {
     public boolean isEdgeDifferentToLastEdge(EdgeIteratorState edge) {
         if (curString == null) {
             curString = (String) edge.getValue(getName());
-            // TODO it would be a bit more efficient if we fetch the Map only once per edge
-            // when more than one KVStringDetails are requested
-            curString = (String) edge.getValue(key);
             if (curString.equals("null"))
                 return false;
             return true;
