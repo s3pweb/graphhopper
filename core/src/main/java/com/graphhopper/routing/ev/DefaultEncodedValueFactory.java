@@ -89,7 +89,10 @@ public class DefaultEncodedValueFactory implements EncodedValueFactory {
             return Curvature.create();
         } else if (Trucked.KEY.equals(name)) {
             return Trucked.create();
-        } else
+        } else if (Crossing.KEY.equals(name)) {
+            return new EnumEncodedValue<>(Crossing.KEY, Crossing.class);
+        } else {
             throw new IllegalArgumentException("DefaultEncodedValueFactory cannot find EncodedValue " + name);
+        }
     }
 }
