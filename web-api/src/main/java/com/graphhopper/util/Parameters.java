@@ -127,11 +127,6 @@ public class Parameters {
          */
         public static final double DEFAULT_HEADING_PENALTY = 300;
         public static final String HEADING_PENALTY = "heading_penalty";
-        /**
-         * block road access via a point in the format lat,lon or an area defined by a circle lat,lon,radius or
-         * a rectangle lat1,lon1,lat2,lon2
-         */
-        public static final String BLOCK_AREA = "block_area";
     }
 
     /**
@@ -197,7 +192,7 @@ public class Parameters {
 
         public static final String PATH_DETAILS = "details";
 
-        // these details are directly accessing the EdgeKVStorage and the names have to be identical
+        // these details are directly accessing the KVStorage for edges and the names have to be identical
         public static final String STREET_NAME = "street_name";
         public static final String STREET_REF = "street_ref";
         public static final String STREET_DESTINATION = "street_destination";
@@ -210,6 +205,10 @@ public class Parameters {
         public static final String WEIGHT = "weight";
         public static final String DISTANCE = "distance";
         public static final String INTERSECTION = "intersection";
+
+        public static final String LEG_TIME = "leg_time";
+        public static final String LEG_DISTANCE = "leg_distance";
+        public static final String LEG_WEIGHT = "leg_weight";
     }
 
 }
