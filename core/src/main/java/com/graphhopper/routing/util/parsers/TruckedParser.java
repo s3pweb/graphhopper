@@ -36,7 +36,7 @@ public class TruckedParser implements TagParser {
     }
 
     @Override
-    public IntsRef handleWayTags(IntsRef edgeFlags, ReaderWay readerWay, IntsRef relationFlags) {
+    public void handleWayTags(IntsRef edgeFlags, ReaderWay readerWay, IntsRef relationFlags) {
         int value = 0;
 
         try {
@@ -48,6 +48,5 @@ public class TruckedParser implements TagParser {
         if (value > 0) {
             truckedEnc.setInt(false, edgeFlags, value);
         }
-        return edgeFlags;
     }
 }

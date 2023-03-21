@@ -4,7 +4,7 @@ all: docker.push
 .PHONY: docker.push
 
 IMAGE ?= s3pweb/graphhopper
-VERSION ?= 7.0-not-yet-released
+VERSION ?= 7.0
 
 docker.push: docker.build
 
